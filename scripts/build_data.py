@@ -113,6 +113,7 @@ def calcular(k):
                       pivot=piv, vcp=bool(contr == 2 and dry))
     return pd.DataFrame(out).T
 
+EXCL = jload("data/excluidos.json", {})
 N = len(C) - 1
 hoy = calcular(N).sort_values("s", ascending=False)
 
@@ -130,7 +131,7 @@ top = jload(HIST + "top10.json", {})
 for i in fri[-9:]:
     d = C.index[i].strftime("%Y-%m-%d")
     if d not in top and i > 260:
-        dfk = calcular(i).sort_values("s", ascending=False).head(10)
+        dfk = calcular(i).sort_values("s", ascending=False); dfk = dfk[~dfk.index.isin(list(EXCL))].head(10)
         top[d] = {"tickers": list(dfk.index), "precios": [r(x) for x in dfk.p], "spy": r(spy.iloc[i])}
 top = {d: top[d] for d in sorted(top)[-30:]}; jsave(HIST + "top10.json", top)
 def res_semana(d, hasta):
@@ -154,20 +155,23 @@ for t, x in hoy.iterrows():
     lo3 = L[t].iloc[-3:].min(); e2 = E200[t]
     rebote = bool(x.s50 > x.s200 and SMA200[t].iloc[-1] > SMA200[t].iloc[-21] and lo3 <= e2.iloc[-1] * 1.005 and p > e2.iloc[-1])
     chg = (p / pp - 1) * 100
+    cc = c.dropna(); s200 = cc.tail(200).mean() if len(cc) >= 200 else np.nan
+    pil = {k: r(x[k], 0) for k in "ABCD"}
     acc.append({"t": t, **{k: M[t][k] for k in ("n", "sec", "ind", "adr")}, "cap": r(M[t]["cap"] / 1e9, 1),
         "p": r(p), "chg": r(chg), "vol_rel": r(vr), "rs": r(x.rs, 0), "drs": r(x.drs, 0), "rsi": r(x.rsi, 0),
-        "A": r(x.A, 0), "B": r(x.B, 0), "C": r(x.C, 0), "D": r(x.D, 0), "s": r(x.s, 1), "s_prev": prev.get(t),
-        "dist50": r((p / x.s50 - 1) * 100, 1), "dist200": r((p / x.s200 - 1) * 100, 1), "volat": r(c.pct_change().tail(20).std() * np.sqrt(252) * 100, 0),
+        **pil, "s": r(.3 * pil["A"] + .3 * pil["B"] + .2 * pil["C"] + .2 * pil["D"], 1), "excluido": EXCL.get(t), "s_prev": prev.get(t),
+        "dist50": r((p / x.s50 - 1) * 100, 1), "dist200": r((p / s200 - 1) * 100, 1) if s200 == s200 else None, "volat": r(c.pct_change().tail(20).std() * np.sqrt(252) * 100, 0),
         "ytd": r((p / ytd0[t] - 1) * 100, 1), "r1s": r((p / c.iloc[-6] - 1) * 100, 1), "r1m": r((p / c.iloc[-22] - 1) * 100, 1),
         "corto": "alcista" if p > SMA20[t].iloc[-1] and p > x.s50 else "bajista" if p < SMA20[t].iloc[-1] and p < x.s50 else "mixta",
         "largo": "alcista" if p > x.s200 and SMA200[t].iloc[-1] > SMA200[t].iloc[-21] else "bajista" if p < x.s200 else "mixta",
         "vcp": x.vcp, "pivot": r(x.pivot), "rebote200": rebote, "pivot_hoy": bool(abs(chg) > 4 and vr > 2),
         "rs_hist": [r(v, 0) for v in RS[t].iloc[-22:]]})
+acc.sort(key=lambda a: -(a["s"] or 0))
 A_ = {a["t"]: a for a in acc}
 
 # ---------- Termómetro ----------
 last = S.iloc[-1]; ok = last.notna()
-n_ = int(ok.sum()); a200 = int((last > SMA200.iloc[-1]).sum()); a50 = int((last > SMA50.iloc[-1]).sum())
+n_ = len(acc); a200 = sum(1 for a in acc if (a["dist200"] or 0) > 0); a50 = sum(1 for a in acc if (a["dist50"] or 0) > 0)
 volu = sum(1 for a in acc if (a["vol_rel"] or 0) > 1.5); sobre = sum(1 for a in acc if (a["rsi"] or 0) > 70)
 amp = sum(1 for a in acc if (a["rs"] or 0) > 70 and (a["dist50"] or -1) > 0)
 spy200 = spy.rolling(200).mean().iloc[-1]; spy1m = (spy.iloc[-1] / spy.iloc[-22] - 1) * 100
@@ -177,7 +181,7 @@ consejo = ("Mercado fuerte: buen momento para operar con normalidad." if temp >=
 p200 = ((S > SMA200) & S.notna()).sum(axis=1) / S.notna().sum(axis=1) * 100
 p50 = ((S > SMA50) & S.notna()).sum(axis=1) / S.notna().sum(axis=1) * 100
 hh = pd.DataFrame({"a": p200, "b": p50}).iloc[220:].tail(250)
-term = {"total": n_, "sobre_sma200": a200, "sobre_sma50": a50, "vol_inusual": volu, "rsi_70": sobre, "amplitud_rs70": amp,
+term = {"total": n_, "sobre_sma200": a200, "sobre_sma50": a50, "vol_inusual": volu, "rsi_70": sobre, "amplitud_rs70": amp, "amplitud_rs70_bruto": sum(1 for a in acc if (a["rs"] or 0) > 70),
         "pct_sma200": r(a200 / n_ * 100, 1), "pct_sma50": r(a50 / n_ * 100, 1), "indice": r(temp, 0), "consejo": consejo,
         "historia": [[i.strftime("%Y-%m-%d"), r(a, 1), r(b, 1)] for i, a, b in zip(hh.index, hh.a, hh.b)]}
 
@@ -190,7 +194,7 @@ for t in ETFS:
     mom = 100 + ((ratio / ratio.shift(1)) - 1).ewm(span=4).mean() * 500
     d = pd.DataFrame({"x": ratio, "y": mom}).dropna().tail(30)
     lid = [a["t"] for a in acc if a["sec"] == ETFS[t]][:8]
-    rot[t] = {"nombre": ETFS[t], "puntos": [[r(a), r(b)] for a, b in zip(d.x, d.y)], "lideres": lid}
+    rot[t] = {"nombre": ETFS[t], "puntos": [[r(a), r(b)] for a, b in zip(d.x, d.y)], "lideres": lid, "zona": ("Liderando" if d.y.iloc[-1] >= 100 else "Debilitándose") if d.x.iloc[-1] >= 100 else ("Mejorando" if d.y.iloc[-1] >= 100 else "Rezagado")}
 semanas_rot = [i.strftime("%d/%m") for i in d.index]
 
 # ---------- Sectores ----------
@@ -216,7 +220,7 @@ bal, macro, prox = [], [], []
 KEY = {"CPI": "Inflación (CPI)", "Consumer Price Index": "Inflación (CPI)", "FOMC": "Fed (FOMC)", "Fed Interest Rate": "Fed: tasa de interés",
        "Nonfarm Payrolls": "Empleo (NFP)", "PCE": "Inflación PCE", "GDP": "PBI", "Unemployment Rate": "Desempleo", "PPI": "Inflación mayorista (PPI)"}
 HORA = {"time-pre-market": "antes de abrir", "time-after-hours": "después del cierre"}
-dias = sorted({lunes + dt.timedelta(days=i) for i in range(5)} | {hoyd + dt.timedelta(days=i) for i in range(8)})
+dias = sorted({lunes + dt.timedelta(days=i) for i in range(5)} | {hoyd + dt.timedelta(days=i) for i in range(29)})
 for d0 in dias:
     d = d0.isoformat()
     try:
@@ -226,7 +230,7 @@ for d0 in dias:
             if t in U:
                 e = {"fecha": d, "t": t, "n": M[t]["n"], "cap": M[t]["cap"], "hora": HORA.get(x.get("time"), "")}
                 if lunes <= d0 <= lunes + dt.timedelta(days=4): bal.append(e)
-                if hoyd <= d0 <= hoyd + dt.timedelta(days=7): prox.append(e)
+                if hoyd <= d0 <= hoyd + dt.timedelta(days=28): prox.append(e)
     except Exception as ex: log("earn", d, ex)
     if lunes <= d0 <= lunes + dt.timedelta(days=4):
         try:
@@ -237,7 +241,9 @@ for d0 in dias:
         except Exception as ex: log("eco", d, ex)
 bal = sorted(sorted(bal, key=lambda x: -x["cap"])[:25], key=lambda x: x["fecha"])
 prox = sorted(prox, key=lambda x: (x["fecha"], -x["cap"]))
-for e in prox: e["s"] = A_[e["t"]]["s"]
+for e in prox:
+    e["s"] = A_[e["t"]]["s"]; A_[e["t"]].setdefault("earnings", e["fecha"])
+for a in acc: a.setdefault("earnings", None)
 
 # ---------- Listas ----------
 srt = lambda k, rev=True, n=10, f=lambda a: True: [a["t"] for a in sorted([a for a in acc if a[k] is not None and f(a)], key=lambda a: a[k], reverse=rev)[:n]]
@@ -246,7 +252,7 @@ dump = {
     "universo": {"total": len(acc), "fuente": "CEDEARs de BYMA + ADRs argentinos"},
     "cabecera": cab, "cinta": cinta, "termometro": term,
     "animo": "malo" if (cab["SPY"]["chg"] or 0) < -1.5 or term["pct_sma200"] < 30 else "bueno",
-    "podio": [a["t"] for a in acc[:3]],
+    "podio": [a["t"] for a in acc if not a["excluido"]][:3], "excluidos": EXCL,
     "cartera_del_dia": {"suben": srt("chg"), "bajan": srt("chg", False), "rsi_sobrecompra": srt("rsi", f=lambda a: a["rsi"] > 70),
                          "rsi_sobreventa": srt("rsi", False, f=lambda a: a["rsi"] < 30)},
     "pivots_hoy": [a["t"] for a in acc if a["pivot_hoy"]], "rebotes_ema200": [a["t"] for a in acc if a["rebote200"]],
