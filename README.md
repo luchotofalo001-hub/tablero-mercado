@@ -1,6 +1,6 @@
 # Tablero de Mercado
 Sitio estático (`site/`) + job gratis de GitHub Actions que corre `scripts/build_data.py` (yfinance, Wikipedia, Nasdaq) y publica en GitHub Pages.
-Cada 30 min en rueda y 21:15 UTC después del cierre (lun–vie).
+Cada 30 min en rueda (solo publica) y 21:15 UTC después del cierre (publica y guarda `data/historial/`: scores, RS diario, Top 10 semanal, lista de CEDEARs).
 
 ## Publicar (una sola vez)
 1. Crear un repo público en GitHub y subir esta carpeta.

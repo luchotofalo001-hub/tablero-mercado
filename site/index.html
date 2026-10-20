@@ -1,24 +1,34 @@
 <!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Tablero de Mercado</title><link rel="stylesheet" href="style.css"></head>
 <body><div id="lluvia" aria-hidden="true"></div>
+<div class="cinta"><div id="cinta"></div></div>
 <main class="app">
-<header class="top"><h1>Tablero de Mercado</h1><button id="tema" aria-label="Cambiar tema">◐</button></header>
+<header class="top"><h1>Tablero de Mercado</h1><nav class="nav"><a class="on" href="./">Dashboard</a><a href="heatmap.html">Heatmap</a></nav><button id="tema" aria-label="Cambiar tema">◐</button></header>
 <p class="sub" id="act">Cargando…</p>
+<div id="alerta"></div>
 <section class="grid2" id="cab"></section>
-<section class="card"><h2>Cuadro de rotación</h2><p class="help">Cada punto es un sector comparado con el S&amp;P 500. La cola muestra las últimas 8 semanas. Tocá un sector para ver sus acciones más fuertes.</p>
-<div class="rrgwrap"><svg id="rrg" viewBox="0 0 360 360"></svg></div><div id="lider"></div></section>
-<section class="card"><h2>Termómetro del mercado</h2><p class="help">Qué parte de las 500 acciones está por encima de su promedio de 200 días (salud de fondo) y de 50 días (corto plazo).</p>
-<div class="gauges"><div id="g200"></div><div id="g50"></div></div><svg id="hist" viewBox="0 0 360 120"></svg>
-<div class="leg"><span class="l1">EMA200</span><span class="l2">EMA50</span></div></section>
-<section class="card"><h2>Puntaje de fortaleza · TOP 100</h2>
-<details><summary>¿Cómo se calcula?</summary><ul class="help">
-<li><b>Tendencia (30%)</b>: precio arriba de su EMA20 (15), EMA50 (15) y EMA200 (20), más 50 si están ordenadas EMA20 &gt; EMA50 &gt; EMA200.</li>
-<li><b>Impulso (25%)</b>: suba de 3 y 6 meses, comparada con el resto (percentil 0–100).</li>
-<li><b>Fuerza vs S&amp;P 500 (25%)</b>: cuánto le ganó al SPY en 6 meses (60%) y 3 meses (40%), en percentil.</li>
-<li><b>Cerca del máximo (20%)</b>: 100 si está en su máximo de 52 semanas, baja 4 puntos por cada 1% de distancia (0 a −25% o peor).</li>
-</ul><p class="help">Mide fuerza, no si está barata. No es recomendación de compra.</p></details>
+<section class="card"><h2>🏆 Podio del día</h2><div id="podio" class="podio"></div></section>
+<section class="card"><h2>Termómetro del mercado</h2><div id="tgauge" class="tg"></div><p id="consejo" class="consejo"></p>
+<div class="kpis" id="kpis"></div><svg id="hist" viewBox="0 0 360 120"></svg><div class="leg"><span class="l1">% sobre SMA200</span><span class="l2">% sobre SMA50</span></div></section>
+<section class="card"><h2>Cartera del día</h2><div class="grid4" id="cartera"></div></section>
+<section class="card"><h2>¿Dónde está la plata?</h2><p class="help">Cada punto es una acción. Derecha = más fuerte que el S&amp;P 500 (RS). Arriba = ganó fuerza vs hace una semana. Tocá un punto.</p>
+<div class="rrgwrap"><svg id="plata" viewBox="0 0 360 360"></svg></div><div id="tip" class="tip"></div></section>
+<section class="card"><h2>Rotación de sectores</h2><p class="help">Cola de 16 semanas. Mové el control o tocá ▶ para ver el recorrido. Tocá un sector para aislarlo.</p>
+<div class="rrgwrap"><svg id="rrg" viewBox="0 0 360 360"></svg></div>
+<div class="play"><button id="pl">▶</button><input type="range" id="sl"><span id="slf"></span></div><div id="lider"></div></section>
+<section class="card"><h2>Puntaje de fortaleza</h2>
+<details><summary>¿Cómo se calcula?</summary><div class="help" id="formula"></div></details>
 <div class="filtros"><input id="q" placeholder="Buscar ticker o empresa" autocomplete="off"><select id="fs"><option value="">Todos los sectores</option></select></div>
-<div class="tabla"><table><thead><tr><th>#</th><th>Acción</th><th>Sector</th><th>Puntaje</th><th>6m</th><th>vs máx</th></tr></thead><tbody id="tb"></tbody></table></div></section>
+<div class="tabla"><table><thead><tr><th>Ticker</th><th>✓</th><th>Precio</th><th>RS</th><th title="Pilares A Tendencia · B Fuerza · C Contracción · D Setup">Pilares A B C D</th><th>Score</th></tr></thead><tbody id="tb"></tbody></table></div>
+<p class="help">Marcá ✓ para mandarlas al comparador.</p></section>
+<section class="grid2b"><div class="card"><h2>Episodios pivot hoy</h2><p class="help">Se movió más de 4% con más del doble de volumen.</p><div id="piv"></div></div>
+<div class="card"><h2>Rebotes en la EMA200</h2><p class="help">En tendencia alcista, tocó la EMA200 en los últimos 3 días y cerró arriba.</p><div id="reb"></div></div></section>
+<section class="card"><h2>Retorno Top 10 de la semana</h2><div id="top10"></div></section>
+<section class="card"><h2>Tendencias RS</h2><p class="help">Cómo cambió la fuerza relativa (RS) del último mes en las 12 mejores.</p><div id="spark" class="spark"></div></section>
+<section class="card"><h2>Sectores y volumen</h2><div class="seg"><button data-k="mes" class="on">Último mes</button><button data-k="semana">Última semana</button></div><div id="secs"></div></section>
+<section class="card"><h2>Volumen inusual hoy</h2><p class="help">Volumen de hoy comparado con su promedio de 20 días.</p><div id="vol"></div></section>
+<section class="card"><h2>Scanner de calidad</h2><p class="help">Tocá un título para ordenar.</p><div class="tabla"><table id="scan"><thead><tr></tr></thead><tbody></tbody></table></div></section>
+<section class="card"><h2>Comparador de activos</h2><div class="filtros"><input id="c1" list="dl" placeholder="Ticker 1"><input id="c2" list="dl" placeholder="Ticker 2"><input id="c3" list="dl" placeholder="Ticker 3"></div><datalist id="dl"></datalist><div id="comp"></div></section>
 <section class="card"><h2>Eventos de la semana</h2><h3>Datos económicos (EE.UU.)</h3><ul id="mac" class="ev"></ul><h3>Balances de empresas grandes</h3><ul id="bal" class="ev"></ul></section>
-<p class="sub">Datos gratuitos de Yahoo Finance, Wikipedia y Nasdaq. Solo informativo.</p>
-</main><script src="app.js"></script></body></html>
+<p class="sub">Datos gratuitos de BYMA, Nasdaq y Yahoo Finance. Solo informativo, no es recomendación.</p>
+</main><script src="comun.js"></script><script src="app.js"></script></body></html>
