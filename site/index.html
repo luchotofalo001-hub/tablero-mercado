@@ -1,0 +1,24 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tablero de Mercado</title><link rel="stylesheet" href="style.css"></head>
+<body><div id="lluvia" aria-hidden="true"></div>
+<main class="app">
+<header class="top"><h1>Tablero de Mercado</h1><button id="tema" aria-label="Cambiar tema">◐</button></header>
+<p class="sub" id="act">Cargando…</p>
+<section class="grid2" id="cab"></section>
+<section class="card"><h2>Cuadro de rotación</h2><p class="help">Cada punto es un sector comparado con el S&amp;P 500. La cola muestra las últimas 8 semanas. Tocá un sector para ver sus acciones más fuertes.</p>
+<div class="rrgwrap"><svg id="rrg" viewBox="0 0 360 360"></svg></div><div id="lider"></div></section>
+<section class="card"><h2>Termómetro del mercado</h2><p class="help">Qué parte de las 500 acciones está por encima de su promedio de 200 días (salud de fondo) y de 50 días (corto plazo).</p>
+<div class="gauges"><div id="g200"></div><div id="g50"></div></div><svg id="hist" viewBox="0 0 360 120"></svg>
+<div class="leg"><span class="l1">EMA200</span><span class="l2">EMA50</span></div></section>
+<section class="card"><h2>Puntaje de fortaleza · TOP 100</h2>
+<details><summary>¿Cómo se calcula?</summary><ul class="help">
+<li><b>Tendencia (30%)</b>: precio arriba de su EMA20 (15), EMA50 (15) y EMA200 (20), más 50 si están ordenadas EMA20 &gt; EMA50 &gt; EMA200.</li>
+<li><b>Impulso (25%)</b>: suba de 3 y 6 meses, comparada con el resto (percentil 0–100).</li>
+<li><b>Fuerza vs S&amp;P 500 (25%)</b>: cuánto le ganó al SPY en 6 meses (60%) y 3 meses (40%), en percentil.</li>
+<li><b>Cerca del máximo (20%)</b>: 100 si está en su máximo de 52 semanas, baja 4 puntos por cada 1% de distancia (0 a −25% o peor).</li>
+</ul><p class="help">Mide fuerza, no si está barata. No es recomendación de compra.</p></details>
+<div class="filtros"><input id="q" placeholder="Buscar ticker o empresa" autocomplete="off"><select id="fs"><option value="">Todos los sectores</option></select></div>
+<div class="tabla"><table><thead><tr><th>#</th><th>Acción</th><th>Sector</th><th>Puntaje</th><th>6m</th><th>vs máx</th></tr></thead><tbody id="tb"></tbody></table></div></section>
+<section class="card"><h2>Eventos de la semana</h2><h3>Datos económicos (EE.UU.)</h3><ul id="mac" class="ev"></ul><h3>Balances de empresas grandes</h3><ul id="bal" class="ev"></ul></section>
+<p class="sub">Datos gratuitos de Yahoo Finance, Wikipedia y Nasdaq. Solo informativo.</p>
+</main><script src="app.js"></script></body></html>
