@@ -17,11 +17,14 @@ jobs:
         with: {python-version: "3.12"}
       - run: pip install yfinance pandas lxml requests
       - run: python scripts/build_data.py
+      - name: Catálogo de bonos (data912 + BYMA + BCRA) para la app Finanzas
+        if: github.event.schedule != '*/30 14-20 * * 1-5'
+        run: python scripts/bonos_catalogo.py || echo "catálogo sin cambios (falló una fuente)"
       - name: Guardar historial en el repo
         if: github.event.schedule != '*/30 14-20 * * 1-5'
         run: |
           git config user.name "tablero-bot"; git config user.email "tablero-bot@users.noreply.github.com"
-          git add data/historial site/data/mercado.json
+          git add data/historial site/data/mercado.json site/data/bonos-catalogo.json
           git diff --cached --quiet || (git commit -m "datos $(date -u +%F)" && git pull --rebase -X ours && git push)
       - uses: actions/upload-pages-artifact@v3
         with: {path: site}
