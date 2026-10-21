@@ -96,7 +96,20 @@ def main():
         if al: b["alias"] = al
         out[t] = b
     for t, b in cur.items(): out.setdefault(t, b)
-    cat = {"version": dt.date.today().isoformat(), "fuente": "data912 (cotizan) + BYMA Open Data (fichas) + BCRA (CER base) + curados", "bonos": sorted(out.values(), key=lambda b: b["t"])}
+    precios = {}   # v6.5.4: precios diarios BYMA Open Data (T+1, paginado); si falla, data912
+    for e in ("public-bonds", "lebacs"):
+        for pg in range(1, 6):
+            try: r = get("https://open.bymadata.com.ar/vanoms-be-core/rest/api/bymadata/free/" + e, json.dumps({"excludeZeroPxAndQty": True, "T1": True, "T0": False, "T2": False, "page_number": pg}).encode())
+            except Exception: break
+            for x in r.get("data") or []:
+                v = x.get("trade") or x.get("closingPrice") or x.get("previousClosingPrice")
+                if v and v > 0: precios[x["symbol"]] = v
+            if pg >= ((r.get("content") or {}).get("page_count") or 1): break
+    if len(precios) < 20:
+        for u in ("arg_bonds", "arg_notes"):
+            for x in get("https://data912.com/live/" + u):
+                if (x.get("c") or 0) > 0: precios[x["symbol"]] = x["c"]
+    cat = {"version": dt.date.today().isoformat(), "precios": precios, "preciosFecha": dt.date.today().isoformat(), "fuente": "data912 (cotizan) + BYMA Open Data (fichas) + BCRA (CER base) + curados", "bonos": sorted(out.values(), key=lambda b: b["t"])}
     os.makedirs("site/data", exist_ok=True)
     json.dump(cat, open("site/data/bonos-catalogo.json", "w"), ensure_ascii=False, separators=(",", ":"))
     print(len(cat["bonos"]), "bonos;", sum(1 for b in cat["bonos"] if b.get("estimado")), "estimados")
