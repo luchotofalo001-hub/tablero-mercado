@@ -1,7 +1,7 @@
 # Catálogo de bonos y letras soberanas argentinas para la app Finanzas.
 # Fuentes gratuitas: data912 (qué cotiza), BYMA Open Data (ficha técnica: emisión, vencimiento, interés, amortización), BCRA (CER base).
 # Los curados a mano (scripts/bonos-base.json) mandan. Salida: site/data/bonos-catalogo.json
-import json, re, datetime as dt, urllib.request, ssl, time, os
+import json, re, datetime as dt, urllib.request, ssl, time, os, sys
 CTX = ssl.create_default_context(); CTX.check_hostname = False; CTX.verify_mode = ssl.CERT_NONE   # open.bymadata usa una cadena incompleta
 BY = "https://open.bymadata.com.ar/vanoms-be-core/rest/api/bymadata/free/bnown/fichatecnica/especies/general"
 def get(u, data=None):
@@ -75,9 +75,20 @@ def main():
     cur = {b["t"]: b for b in base}
     syms = sorted({x["symbol"] for u in ("arg_bonds", "arg_notes") for x in get("https://data912.com/live/" + u)})
     porIsin, fichas = {}, {}
+    byma_ok = byma_fail_streak = 0
     for s in syms:
-        try: d = get(BY, json.dumps({"symbol": s}).encode()).get("data") or []
-        except Exception: d = []
+        try:
+            d = get(BY, json.dumps({"symbol": s}).encode()).get("data") or []
+            byma_ok += 1
+            byma_fail_streak = 0
+        except Exception:
+            d = []
+            byma_fail_streak += 1
+            # Si BYMA no responde ni una vez, no esperar símbolo por símbolo (30s c/u).
+            # Se sale con error y no se pisa site/data/bonos-catalogo.json.
+            if byma_ok == 0 and byma_fail_streak >= 4:
+                print("BYMA: 4 fallos consecutivos al inicio, se deja el catálogo anterior", file=sys.stderr)
+                sys.exit(1)
         time.sleep(0.15)
         if not d: continue
         f = d[0]; fichas[s] = f; porIsin.setdefault(f.get("codigoIsin") or s, []).append(s)
