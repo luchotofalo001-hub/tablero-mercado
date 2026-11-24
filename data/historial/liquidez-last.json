@@ -1,6 +1,6 @@
 {
-  "actualizado": "2026-11-24T02:54:09Z",
-  "fecha": "2026-11-23",
+  "actualizado": "2026-11-24T04:05:46Z",
+  "fecha": "2026-11-24",
   "score": 19.1,
   "score_sin_fondeo": 20.5,
   "fondeo_pts": -1.4,
@@ -15,7 +15,7 @@
   "n_entradas": 5,
   "correl_13s": 0.45,
   "ndx_ultimo": 26746.1,
-  "ndx_fecha": "2026-11-23",
+  "ndx_fecha": "2026-11-24",
   "entradas": [
     {
       "id": "m2",
@@ -144,7 +144,9 @@
     "aporte_sofr_iorb": -0.05,
     "aporte_reservas": -0.0,
     "x_fondeo": -0.05,
-    "umbral_reservas_t": 3.0
+    "umbral_reservas_t": 3.0,
+    "umbral_reservas_t_historico": 3.0,
+    "umbral_modelo": "10% del PBI nominal EE.UU. (BEA A191RC); 3,00 T desde 2026"
   },
   "escenarios": [
     {
@@ -250,13 +252,13 @@
   ],
   "hitos": [
     {
-      "fecha": "2017-04-05",
-      "score": 75.0,
+      "fecha": "2017-06-14",
+      "score": 71.3,
       "etiqueta": "2017: Pipo Score 60-75"
     },
     {
       "fecha": "2020-03-11",
-      "score": 0.0,
+      "score": 0.2,
       "etiqueta": "Mar 2020: Pipo Score ~5"
     },
     {
@@ -265,7 +267,7 @@
       "etiqueta": "Pisos 2022: Pipo Score < 20"
     },
     {
-      "fecha": "2026-11-23",
+      "fecha": "2026-11-24",
       "score": 19.1,
       "etiqueta": "Hoy"
     }
@@ -281,6 +283,6 @@
     "Fed PRates IORB+IOER",
     "Yahoo ^NDX"
   ],
-  "formula": "100 * Φ(X_base + X_fondeo), Φ = CDF normal estándar; X_base = promedio de z (3a) con signo; X_fondeo = −0,025·max(0, SOFR−IORB en pb) − max(0, 3−reservas_T)",
+  "formula": "100 * Φ(X_base + X_fondeo), Φ = CDF normal estándar; X_base = promedio de z (3a) con signo; X_fondeo = −0,025·max(0, SOFR−IORB en pb) − max(0, umbral(t)−reservas_T); umbral(t)=10% del PBI nominal EE.UU. (BEA A191RC) y 3,00 T desde 2026; SOFR−IORB=0 antes del 3-abr-2018",
   "historia_n": 674
 }

@@ -249,14 +249,18 @@ function drawCharts(hist, withF){
     d+=(d?' L':'M')+` ${xOf(i).toFixed(2)} ${ly(p.ndx).toFixed(2)}`;
   });
   ndx.appendChild(svg('path',{d,fill:'none',stroke:'#74c6e2','stroke-width':1.8,'stroke-linejoin':'round'}));
-  // last pill
+  // last pill (clamp inside viewBox so it never clips on mobile)
   const last=hist[hist.length-1];
+  function addEndPill(el, x, y, w, fill, text, textFill){
+    const cx=x, cy=y;
+    el.appendChild(svg('circle',{cx:cx,cy:cy,r:3.5,fill:fill==='#e6dfc4'?'#0b110f':fill,stroke:fill==='#e6dfc4'?'#e6dfc4':undefined,'stroke-width':fill==='#e6dfc4'?1.6:undefined}));
+    let px=x+8;
+    if(px+w>W-4) px=Math.max(4, W-4-w);
+    el.appendChild(svg('rect',{x:px,y:y-11,width:w,height:20,rx:10,fill:fill}));
+    el.appendChild(svg('text',{x:px+w/2,y:y+3,'text-anchor':'middle',fill:textFill,'font-size':11,'font-weight':700}, text));
+  }
   if(last.ndx!=null){
-    const y=ly(last.ndx), x=xOf(hist.length-1);
-    ndx.appendChild(svg('circle',{cx:x,cy:y,r:3.5,fill:'#74c6e2'}));
-    const pill=svg('rect',{x:x+8,y:y-11,width:62,height:20,rx:10,fill:'#74c6e2'});
-    ndx.appendChild(pill);
-    ndx.appendChild(svg('text',{x:x+39,y:y+3,'text-anchor':'middle',fill:'#0b110f','font-size':11,'font-weight':700}, fmt(last.ndx,0)));
+    addEndPill(ndx, xOf(hist.length-1), ly(last.ndx), 62, '#74c6e2', fmt(last.ndx,0), '#0b110f');
   }
 
   // Score chart
@@ -281,13 +285,16 @@ function drawCharts(hist, withF){
   let ds='';
   hist.forEach((p,i)=>{ const v=scoreAt(p); if(v==null) return; ds+=(ds?' L':'M')+` ${xOf(i).toFixed(2)} ${yS(v).toFixed(2)}`; });
   sc.appendChild(svg('path',{d:ds,fill:'none',stroke:'#e6dfc4','stroke-width':1.8,'stroke-linejoin':'round'}));
-  // last
+  // last score pill
   const ls=scoreAt(last);
   if(ls!=null){
     const y=yS(ls), x=xOf(hist.length-1);
     sc.appendChild(svg('circle',{cx:x,cy:y,r:4,fill:'#0b110f',stroke:'#e6dfc4','stroke-width':1.6}));
-    sc.appendChild(svg('rect',{x:x+8,y:y-11,width:48,height:20,rx:10,fill:'#e6dfc4'}));
-    sc.appendChild(svg('text',{x:x+32,y:y+3,'text-anchor':'middle',fill:'#0b110f','font-size':11,'font-weight':700}, fmt(ls,1)));
+    const w=48;
+    let px=x+8;
+    if(px+w>W-4) px=Math.max(4, W-4-w);
+    sc.appendChild(svg('rect',{x:px,y:y-11,width:w,height:20,rx:10,fill:'#e6dfc4'}));
+    sc.appendChild(svg('text',{x:px+w/2,y:y+3,'text-anchor':'middle',fill:'#0b110f','font-size':11,'font-weight':700}, fmt(ls,1)));
   }
   // eje años
   const years={};
@@ -296,25 +303,34 @@ function drawCharts(hist, withF){
     if(i===0) return;
     sc.appendChild(svg('text',{x:xOf(i),y:H2-12,'text-anchor':'middle'}, y));
   });
-  // hitos
+  // hitos — cajas clampadas dentro del viewBox; textos más cortos en móvil
+  const narrow=(typeof window!=='undefined' && window.innerWidth<=560);
   (L.hitos||[]).forEach((h,hi)=>{
     const i=hist.findIndex(p=>p.fecha>=h.fecha);
     if(i<0) return;
     const v=scoreAt(hist[i]); if(v==null) return;
     const x=xOf(i), y=yS(v);
     sc.appendChild(svg('circle',{cx:x,cy:y,r:3.2,fill:'#0b110f',stroke:'#e6dfc4','stroke-width':1.2}));
-    const label=h.etiqueta||'';
-    const tw=Math.min(200, 7.0*label.length+10);
+    let label=h.etiqueta||'';
+    if(narrow){
+      label=label.replace(/Pipo Score /g,'').replace(/el más profundo desde /g,'piso post-');
+    }
+    const tw=Math.min(narrow?150:196, Math.ceil((narrow?6.2:6.8)*label.length+12));
+    const th=18;
     const isLast=hi===(L.hitos.length-1);
     const low=v<25;
-    const left=isLast || x>820;
-    const tx=left?x-10:x+10;
-    // Si el puntaje es bajo, la etiqueta va ARRIBA (o más arriba si hay otra cerca)
-    const dy = low ? (isLast ? -16 : -36 - (hi%2)*18) : -28;
-    const by=y+dy;
-    const box=svg('rect',{x:left?tx-tw:tx,y:by-13,width:tw,height:18,rx:4,fill:'#0c1412',stroke:'rgba(255,255,255,.15)'});
-    sc.appendChild(box);
-    sc.appendChild(svg('text',{x:left?tx-6:tx+6,y:by,'text-anchor':left?'end':'start',fill:'#e6dfc4','font-size':10}, label));
+    const minX=4, maxX=W-4, minY=pad2.t+2, maxY=H2-pad2.b-4;
+    let dy=low?(isLast?-20:-40-(hi%2)*18):(isLast?-22:-28);
+    let by=y+dy;
+    if(by-13<minY) by=minY+13;
+    if(by+5>maxY) by=maxY-5;
+    let left=isLast || x>820 || (x+10+tw>maxX);
+    let bx=left?x-10-tw:x+10;
+    if(bx<minX){ bx=minX; left=false; if(x+10+tw<=maxX) bx=x+10; }
+    if(bx+tw>maxX){ bx=maxX-tw; left=true; }
+    sc.appendChild(svg('rect',{x:bx,y:by-13,width:tw,height:th,rx:4,fill:'#0c1412',stroke:'rgba(255,255,255,.15)'}));
+    const textX=left?bx+tw-6:bx+6;
+    sc.appendChild(svg('text',{x:textX,y:by,'text-anchor':left?'end':'start',fill:'#e6dfc4','font-size':narrow?9:10}, label));
   });
 
   // hover sincronizado

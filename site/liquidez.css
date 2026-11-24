@@ -80,7 +80,7 @@
 .chk{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--pipo-tx);margin:8px 0 14px;cursor:pointer;user-select:none}
 .chk input{accent-color:var(--pipo-gold);width:16px;height:16px}
 .charts{position:relative}
-#chartNdx,#chartScore{width:100%;height:auto;display:block;overflow:visible}
+#chartNdx,#chartScore{width:100%;height:auto;display:block;overflow:hidden}
 #chartNdx{margin-bottom:-8px}
 .tip-chart{position:absolute;z-index:3;background:#0c1412;border:1px solid var(--pipo-line);color:var(--pipo-tx);padding:8px 10px;border-radius:10px;font-size:12px;pointer-events:none;max-width:260px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
 .charts svg text{fill:var(--pipo-mu);font-size:11px;font-family:Inter,system-ui,sans-serif}
@@ -149,6 +149,9 @@
   .score-big{font-size:56px}
   .kpi b{font-size:18px}
   .liq-page .app.liq-app{padding-left:10px;padding-right:10px}
+  .charts{overflow:hidden}
+  #chartNdx,#chartScore{overflow:hidden}
+  .v2-lead{max-width:100%}
 }
 
 #tankWave path:nth-child(2){animation:waveShift 3.6s linear infinite}

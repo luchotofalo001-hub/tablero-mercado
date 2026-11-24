@@ -63,9 +63,72 @@ def r2(x):
 def r3(x):
     return _r(x, 3)
 
-def fondeo_x(sofr_iorb_pb, reservas_t):
-    a = 0.0 if sofr_iorb_pb is None else -0.025 * max(0.0, float(sofr_iorb_pb))
-    b = 0.0 if reservas_t is None else -max(0.0, 3.00 - float(reservas_t))
+# Umbral de reservas amplias: 10% del PBI nominal de EE.UU. (BEA NIPA A191RC,
+# millones de USD, SAAR trimestral). Anclado en 3,00 T USD desde 2026 para
+# que la fórmula viva y el simulador de Vista 3 coincidan con las unidades
+# de Pipo (−max(0, 3,00 − reservas_T) hoy). Antes de 2026 el umbral sigue
+# al PBI contemporáneo (2014–2017 ≈ 1,75–1,95 T; 2019 ≈ 2,14 T).
+# Fuente: https://apps.bea.gov/national/Release/TXT/NipaDataQ.txt (4-nov-2026).
+SOFR_INICIO = pd.Timestamp("2018-04-03")
+UMBRAL_2026 = 3.00  # T USD
+
+# year, quarter, GDP millions USD
+_BEA_A191RC_Q = [
+    (2010,1,14764610),(2010,2,14980193),(2010,3,15141607),(2010,4,15309474),
+    (2011,1,15351448),(2011,2,15557539),(2011,3,15647680),(2011,4,15842259),
+    (2012,1,16068805),(2012,2,16207115),(2012,3,16319541),(2012,4,16420419),
+    (2013,1,16648189),(2013,2,16728687),(2013,3,16953838),(2013,4,17192019),
+    (2014,1,17197738),(2014,2,17518508),(2014,3,17804228),(2014,4,17912079),
+    (2015,1,18063529),(2015,2,18279784),(2015,3,18401626),(2015,4,18435137),
+    (2016,1,18525933),(2016,2,18711702),(2016,3,18892639),(2016,4,19089379),
+    (2017,1,19280084),(2017,2,19438643),(2017,3,19692595),(2017,4,20037088),
+    (2018,1,20328553),(2018,2,20580912),(2018,3,20798730),(2018,4,20917867),
+    (2019,1,21111600),(2019,2,21397938),(2019,3,21717171),(2019,4,21933217),
+    (2020,1,21751238),(2020,2,19958291),(2020,3,21704437),(2020,4,22087160),
+    (2021,1,22704650),(2021,2,23456708),(2021,3,23998844),(2021,4,24823190),
+    (2022,1,25259992),(2022,2,25869353),(2022,3,26335374),(2022,4,26774117),
+    (2023,1,27241282),(2023,2,27533925),(2023,3,28064032),(2023,4,28464306),
+    (2024,1,28793191),(2024,2,29232964),(2024,3,29568256),(2024,4,29929552),
+    (2025,1,30171979),(2025,2,30630174),(2025,3,31180493),(2025,4,31462523),
+    (2026,1,31906274),(2026,2,32563030),(2026,3,33010036),
+]
+
+def gdp_nominal_t(fecha):
+    """PBI nominal EE.UU. en billones (T) USD, escalón al inicio de trimestre (SAAR)."""
+    if fecha is None:
+        return None
+    ts = pd.Timestamp(fecha)
+    y, q = ts.year, (ts.month - 1) // 3 + 1
+    last = None
+    for yy, qq, mill in _BEA_A191RC_Q:
+        if (yy, qq) <= (y, q):
+            last = mill
+        else:
+            break
+    if last is None:
+        last = _BEA_A191RC_Q[0][2]
+    return last / 1_000_000.0  # millions → T
+
+def umbral_reservas(fecha=None):
+    """Umbral de reservas amplias en T USD. 3,00 desde 2026 / si no hay fecha."""
+    if fecha is None or pd.Timestamp(fecha) >= pd.Timestamp("2026-01-01"):
+        return UMBRAL_2026
+    g = gdp_nominal_t(fecha)
+    if g is None or not np.isfinite(g):
+        return UMBRAL_2026
+    return 0.10 * float(g)
+
+def fondeo_x(sofr_iorb_pb, reservas_t, fecha=None, umbral=None):
+    """X_fondeo ≤ 0. SOFR−IORB = 0 antes del lanzamiento (3-abr-2018).
+    Umbral de reservas: histórico = 10% PBI; vivo/2026 = 3,00 T."""
+    pb = sofr_iorb_pb
+    if fecha is not None and pd.Timestamp(fecha) < SOFR_INICIO:
+        pb = 0.0
+    a = 0.0 if pb is None else -0.025 * max(0.0, float(pb))
+    u = UMBRAL_2026 if umbral is None and fecha is None else (
+        umbral if umbral is not None else umbral_reservas(fecha)
+    )
+    b = 0.0 if reservas_t is None else -max(0.0, float(u) - float(reservas_t))
     return a + b, a, b
 
 BANDAS = [
@@ -103,11 +166,11 @@ def regimen_de(score):
             "a_neutral": a_neu, "subtitulo": sub}
 
 # aportes y score a partir de z (ya con signo aplicado; None = inactiva)
-def calcular(z_signed, sofr_pb, reservas_t):
+def calcular(z_signed, sofr_pb, reservas_t, fecha=None, umbral=None):
     act = [z for z in z_signed if z is not None and np.isfinite(z)]
     n = len(act)
     x_base = (sum(act) / n) if n else None
-    x_f, a_s, a_r = fondeo_x(sofr_pb, reservas_t)
+    x_f, a_s, a_r = fondeo_x(sofr_pb, reservas_t, fecha=fecha, umbral=umbral)
     x_tot = None if x_base is None else x_base + x_f
     s = score_of(x_tot)
     s0 = score_of(x_base)
@@ -145,6 +208,87 @@ def test_formula():
     if failed:
         raise SystemExit("test_formula FALLÓ: " + ", ".join(failed))
     log("test_formula OK")
+    return True
+
+def test_umbral_y_sofr():
+    """Umbral histórico ~10% PBI, 3,00 T en 2026, y SOFR−IORB = 0 pre 3-abr-2018."""
+    ok = []
+    u14 = umbral_reservas("2014-06-15")
+    u17 = umbral_reservas("2017-06-15")
+    u19 = umbral_reservas("2019-06-15")
+    u26 = umbral_reservas("2026-11-23")
+    ok.append(("umbral 2014 ≈ 1,75 T", 1.72 <= u14 <= 1.82, r3(u14)))
+    ok.append(("umbral 2017 ≈ 1,94 T", 1.90 <= u17 <= 1.98, r3(u17)))
+    ok.append(("umbral 2019 ≈ 2,14 T", abs(u19 - 2.14) < 0.03, r3(u19)))
+    ok.append(("umbral 2026 = 3,00", u26 == 3.00, u26))
+    ok.append(("umbral None = 3,00", umbral_reservas(None) == 3.00, umbral_reservas(None)))
+    # 2017: reservas típicas ~2,2 T, por encima del umbral → 0 penalidad
+    xf, a, b = fondeo_x(0.0, 2.20, fecha="2017-06-15")
+    ok.append(("2017 reservas 2,20 T sin penalidad", a == 0.0 and b == 0.0, (a, b)))
+    # 2019: reservas ~1,50 T vs umbral ~2,14 → gap moderado (no −1,50 del umbral fijo 3,00)
+    xf, a, b = fondeo_x(0.0, 1.50, fecha="2019-06-15")
+    ok.append(("2019 gap moderado (no crush a −1,50)", -0.80 <= b <= -0.50, r3(b)))
+    # vivo 2026 sigue en 3,00
+    xf, a, b = fondeo_x(2.0, 2.98, fecha="2026-11-20")
+    ok.append(("2026 umbral 3,00 / reservas 2,98 → −0,02", abs(b + 0.02) < 1e-9, r3(b)))
+    # SOFR no existía
+    xf, a, b = fondeo_x(25.0, 2.20, fecha="2017-06-15")
+    ok.append(("pre-abr 2018 SOFR−IORB = 0", a == 0.0, a))
+    xf, a, b = fondeo_x(25.0, 2.20, fecha="2018-04-02")
+    ok.append(("2-abr-2018 SOFR−IORB = 0", a == 0.0, a))
+    xf, a, b = fondeo_x(25.0, 2.98, fecha="2018-04-03")
+    ok.append(("desde 3-abr-2018 SOFR cuenta", abs(a + 0.625) < 1e-9, r3(a)))
+    # el chequeo vivo de la fórmula no se altera (fecha omitida → umbral 3,00)
+    out = calcular([-1.23, 0.29, -2.05, -3.00, -0.95, 1.13], 2.0, 2.98)
+    ok.append(("X_base=-0,968 → 16,6", r1(out["score_sin_fondeo"]) == 16.6, r1(out["score_sin_fondeo"])))
+    ok.append(("X=-1,038 → 15,0", r1(out["score"]) == 15.0, r1(out["score"])))
+    failed = [k for k, b, v in ok if not b]
+    for k, b, v in ok:
+        log(("OK" if b else "FAIL"), k, "→", v)
+    if failed:
+        raise SystemExit("test_umbral_y_sofr FALLÓ: " + ", ".join(failed))
+    log("test_umbral_y_sofr OK")
+    return True
+
+def _punto_cerca(hist, fecha):
+    ts = pd.Timestamp(fecha)
+    return min(hist, key=lambda p: abs((pd.Timestamp(p["fecha"]) - ts).days))
+
+def test_historia(hist=None):
+    """Chequeos sobre la curva semanal: 2017 alineada, 2019 con gap moderado."""
+    if hist is None:
+        path = os.path.abspath(OUT)
+        try:
+            hist = (json.load(open(path)).get("liquidez") or {}).get("historia") or []
+        except Exception:
+            hist = []
+    if len(hist) < 50:
+        log("test_historia: sin historia suficiente, se omite")
+        return True
+    ok = []
+    p17 = _punto_cerca(hist, "2017-06-15")
+    p19 = _punto_cerca(hist, "2019-06-15")
+    p20 = _punto_cerca(hist, "2020-03-18")
+    s17, d17 = p17.get("score"), p17.get("score_sin_fondeo")
+    gap17 = (s17 or 0) - (d17 or 0)
+    ok.append(("Jun-2017 solid ≈ dashed (|gap|≤8)", abs(gap17) <= 8, (p17["fecha"], s17, d17, round(gap17, 1))))
+    ok.append(("Jun-2017 alrededor 60-75", 55 <= (s17 or 0) <= 85 and 55 <= (d17 or 0) <= 90,
+               (s17, d17)))
+    s19, d19 = p19.get("score"), p19.get("score_sin_fondeo")
+    gap19 = (s19 or 0) - (d19 or 0)
+    ok.append(("Jun-2019 solid no crush (~1)", s19 is not None and s19 >= 8,
+               (p19["fecha"], s19, d19, round(gap19, 1))))
+    ok.append(("Jun-2019 gap moderado", s19 is not None and d19 is not None and -25 <= gap19 <= 0,
+               (s19, d19, round(gap19, 1))))
+    s20, d20 = p20.get("score"), p20.get("score_sin_fondeo")
+    ok.append(("Mar-2020 ambos bajos", s20 is not None and s20 <= 20 and d20 is not None and d20 <= 25,
+               (p20["fecha"], s20, d20)))
+    failed = [k for k, b, v in ok if not b]
+    for k, b, v in ok:
+        log(("OK" if b else "FAIL"), k, "→", v)
+    if failed:
+        raise SystemExit("test_historia FALLÓ: " + ", ".join(failed))
+    log("test_historia OK")
     return True
 
 # ---------- HTTP ----------
@@ -664,7 +808,7 @@ def construir(series):
             continue
         pb = at(sofr_iorb_pb, t)
         res = at(reservas, t)
-        out = calcular(zs, pb, res)
+        out = calcular(zs, pb, res, fecha=t)
         if out["score"] is None:
             continue
         hist.append({
@@ -706,7 +850,7 @@ def construir(series):
 
     pb = at(sofr_iorb_pb, t)
     res = at(reservas, t)
-    out = calcular(z_hoy, pb, res)
+    out = calcular(z_hoy, pb, res, fecha=t)
     for e, ap in zip(entradas, out["aportes"]):
         e["aporte"] = r2(ap)
 
@@ -748,11 +892,15 @@ def construir(series):
         return {"fecha": i.strftime("%Y-%m-%d"), "score": float(hdf.loc[i, "score"]), "etiqueta": etiqueta}
 
     hitos = []
-    # 2017: período 60–75, tomar el máximo de 2017
+    # 2017: etiqueta 60–75, anclar en un punto de esa banda (junio), no en el máximo (~90)
     y17 = hdf.loc["2017-01-01":"2017-12-31", "score"].dropna() if "2017-01-01" <= hdf.index.max().strftime("%Y-%m-%d") else pd.Series(dtype=float)
     if not y17.empty:
-        i = y17.idxmax()
-        hitos.append({"fecha": i.strftime("%Y-%m-%d"), "score": float(y17.max()),
+        band = y17[(y17 >= 60) & (y17 <= 75)]
+        if band.empty:
+            band = y17
+        target = pd.Timestamp("2017-06-15")
+        i = band.index[int(np.argmin(np.abs((band.index - target).days)))]
+        hitos.append({"fecha": i.strftime("%Y-%m-%d"), "score": float(y17.loc[i]),
                       "etiqueta": "2017: Pipo Score 60-75"})
     # Mar 2020: mínimo alrededor de marzo
     y20 = hdf.loc["2020-02-01":"2020-04-30", "score"].dropna()
@@ -799,11 +947,13 @@ def construir(series):
             "aporte_reservas": r2(out["aporte_reservas"]),
             "x_fondeo": r3(out["x_fondeo"]),
             "umbral_reservas_t": 3.00,
+            "umbral_reservas_t_historico": r3(umbral_reservas(fecha)),
+            "umbral_modelo": "10% del PBI nominal EE.UU. (BEA A191RC); 3,00 T desde 2026",
         },
         "escenarios": esc,
         "hitos": hitos,
         "fuentes": series_fuentes_list(series),
-        "formula": "100 * Φ(X_base + X_fondeo), Φ = CDF normal estándar; X_base = promedio de z (3a) con signo; X_fondeo = −0,025·max(0, SOFR−IORB en pb) − max(0, 3−reservas_T)",
+        "formula": "100 * Φ(X_base + X_fondeo), Φ = CDF normal estándar; X_base = promedio de z (3a) con signo; X_fondeo = −0,025·max(0, SOFR−IORB en pb) − max(0, umbral(t)−reservas_T); umbral(t)=10% del PBI nominal EE.UU. (BEA A191RC) y 3,00 T desde 2026; SOFR−IORB=0 antes del 3-abr-2018",
         "historia": [{"fecha": h["fecha"], "score": h["score"],
                       "score_sin_fondeo": h["score_sin_fondeo"], "ndx": h["ndx"]} for h in hist],
     }
@@ -846,8 +996,11 @@ def main(argv=None):
     argv = argv or sys.argv[1:]
     if "--test" in argv:
         test_formula()
+        test_umbral_y_sofr()
+        test_historia()
         return 0
     test_formula()
+    test_umbral_y_sofr()
     block = compute_liquidez()
     log("SCORE", block["score"], "sin fondeo", block["score_sin_fondeo"],
         "fondeo_pts", block["fondeo_pts"], "régimen", block["regimen"],
@@ -856,6 +1009,7 @@ def main(argv=None):
     for e in block["entradas"]:
         log(" ", e["id"], "z=", e["z"], "activo=", e["activo"], "valor=", e["valor"], "fecha=", e["fecha"], e.get("fuente"))
     log(" fondeo", block["fondeo"])
+    test_historia(block.get("historia") or [])
     merge_into_mercado(block)
     # snapshot compacto por si hace falta
     snap = os.path.join(ROOT, "data", "historial", "liquidez-last.json")
