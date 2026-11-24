@@ -261,5 +261,16 @@ dump = {
     "proximos_earnings": prox, "eventos": {"semana": lunes.isoformat(), "balances": bal, "macro": macro},
     "acciones": acc, "ranking": acc[:100],
 }
+# Indicador de Liquidez (Pipo Score)
+prev_liq = jload(OUT + "mercado.json", {}).get("liquidez") if os.path.exists(OUT + "mercado.json") else None
+try:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from liquidez import compute_liquidez
+    dump["liquidez"] = compute_liquidez()
+    log("liquidez", dump["liquidez"].get("score"), dump["liquidez"].get("regimen"))
+except Exception as ex:
+    log("liquidez FAIL", ex)
+    dump["liquidez"] = prev_liq
+
 jsave(OUT + "mercado.json", dump)
 print("ok", len(acc), term["indice"], len(prox), len(semanas), "pivots", len(dump["pivots_hoy"]), "rebotes", len(dump["rebotes_ema200"]))

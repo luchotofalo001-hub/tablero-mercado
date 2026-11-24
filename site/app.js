@@ -57,7 +57,16 @@ function eventos(){const E=D.eventos;$('#mac').innerHTML=E.macro.map(m=>`<li><sp
 $('#bal').innerHTML=E.balances.map(b=>`<li><span><b>${b.t}</b> <small>${b.n}</small></span><span>${fecha(b.fecha)} ${b.hora}</span></li>`).join('')||'<li>Sin balances grandes</li>'}
 cargar(d=>{D=d;d.acciones.forEach(a=>A[a.t]=a);
 $('#formula').innerHTML=`<p><b>Score final</b> = 30% A + 30% B + 20% C + 20% D (0 a 100). <b>RS</b> (0–99): percentil del rendimiento de 3, 6, 9 y 12 meses (pesa más el de 3) contra el SPY, entre ${d.universo.total} CEDEARs y ADRs.</p>`+Object.values(PIL).map(p=>`<p>${p}</p>`).join('')+'<p>Mide fuerza, no si está barata. No es recomendación.</p>';
-cab();termo();cartera();plata();rot();listas();sectores('mes');scan();eventos();
+cab();
+if(D.liquidez){const L=D.liquidez,el=$('#liq-teaser');if(el){el.hidden=false;
+const col=L.score<20?'var(--bad)':L.score<40?'var(--wa)':L.score>60?'var(--ok)':'var(--tx)';
+el.innerHTML=`<h2>Indicador de Liquidez</h2><p class="help" style="text-align:center">Pipo Score · ${L.fecha||''}</p>
+<div class="kpis"><div><b style="color:${col}">${f(L.score,1)}</b><small>Puntaje</small></div>
+<div><b style="color:${col}">${L.regimen||'–'}</b><small>Régimen</small></div>
+<div><b>${(L.fondeo_pts>0?'+':'')+f(L.fondeo_pts,1)} pts</b><small>Fondeo</small></div>
+<div><b>${f(L.score_sin_fondeo,1)}</b><small>Sin fondeo</small></div></div>
+<p style="text-align:center;margin:8px 0 0"><a href="liquidez.html" style="color:var(--ac)">Ver medidor, serie histórica y simulador →</a></p>`;}}
+termo();cartera();plata();rot();listas();sectores('mes');scan();eventos();
 SEC.forEach(s=>$('#fs').add(new Option(s,s)));score();$('#q').oninput=$('#fs').onchange=score;
 $('#tb').onchange=e=>{const t=e.target.dataset.t;if(!t)return;e.target.checked?marcados.add(t):marcados.delete(t);localStorage.marc=JSON.stringify([...marcados]);const l=[...marcados].slice(-3);['#c1','#c2','#c3'].forEach((i,j)=>$(i).value=l[j]||'');comp()};
 $('#dl').innerHTML=d.acciones.map(a=>`<option value="${a.t}">${a.n}</option>`).join('');const ini=JSON.parse(localStorage.comp||'null')||d.podio;['#c1','#c2','#c3'].forEach((i,j)=>{$(i).value=ini[j]||'';$(i).onchange=comp});comp();

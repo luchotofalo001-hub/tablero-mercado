@@ -1,0 +1,286 @@
+{
+  "actualizado": "2026-11-24T02:54:09Z",
+  "fecha": "2026-11-23",
+  "score": 19.1,
+  "score_sin_fondeo": 20.5,
+  "fondeo_pts": -1.4,
+  "regimen": "Sequía",
+  "titulo": "SEQUÍA DE LIQUIDEZ",
+  "subtitulo": "Banda más baja · 0.9 pts bajo ajuste",
+  "al_proximo_regimen": 0.9,
+  "a_neutral": 20.9,
+  "x_base": -0.825,
+  "x_fondeo": -0.05,
+  "x_total": -0.875,
+  "n_entradas": 5,
+  "correl_13s": 0.45,
+  "ndx_ultimo": 26746.1,
+  "ndx_fecha": "2026-11-23",
+  "entradas": [
+    {
+      "id": "m2",
+      "grupo": "liquidez",
+      "nombre": "M2 de EE.UU. (sustituye al M2 global)",
+      "detalle": "Variación a 13 semanas · M2 global en dólares pendiente",
+      "signo": 1,
+      "modo": "chg13",
+      "activo": true,
+      "z": 0.49,
+      "valor": 23508.0,
+      "fecha": "2026-10-05",
+      "fuente": "Fed H.6 M2 NSA semanal",
+      "manual": false,
+      "aporte": 0.1
+    },
+    {
+      "id": "liq_neta",
+      "grupo": "liquidez",
+      "nombre": "Liquidez neta de EE.UU.",
+      "detalle": "Variación a 13 semanas · balance de la Fed − caja del Tesoro − repo inverso",
+      "signo": 1,
+      "modo": "chg13",
+      "activo": true,
+      "z": 0.32,
+      "valor": 5848.81,
+      "fecha": "2026-11-18",
+      "fuente": "WALCL − WTREGEN − RRPONTSYD (billions USD)",
+      "manual": false,
+      "aporte": 0.06
+    },
+    {
+      "id": "dolar",
+      "grupo": "liquidez",
+      "nombre": "Dólar amplio (sustituye al DXY)",
+      "detalle": "Variación a 13 semanas · dólar más fuerte = dinero más escaso",
+      "signo": -1,
+      "modo": "chg13",
+      "activo": true,
+      "z": 1.93,
+      "valor": 123.6,
+      "fecha": "2026-11-20",
+      "fuente": "Fed H.10 BRD",
+      "manual": false,
+      "aporte": -0.39
+    },
+    {
+      "id": "amplitud",
+      "grupo": "liquidez",
+      "nombre": "Amplitud de bancos centrales",
+      "detalle": "Sin dato: falta cargarla a mano. Queda fuera del promedio",
+      "signo": 1,
+      "modo": "manual",
+      "activo": false,
+      "z": null,
+      "valor": null,
+      "fecha": null,
+      "fuente": null,
+      "manual": true,
+      "aporte": null
+    },
+    {
+      "id": "vix",
+      "grupo": "estres",
+      "nombre": "VIX",
+      "detalle": "Volatilidad de acciones",
+      "signo": -1,
+      "modo": "nivel",
+      "activo": true,
+      "z": 2.41,
+      "valor": 26.62,
+      "fecha": "2026-11-23",
+      "fuente": "Yahoo ^VIX",
+      "manual": false,
+      "aporte": -0.48
+    },
+    {
+      "id": "move",
+      "grupo": "estres",
+      "nombre": "MOVE",
+      "detalle": "Volatilidad de bonos",
+      "signo": -1,
+      "modo": "nivel",
+      "activo": true,
+      "z": 0.59,
+      "valor": 100.91,
+      "fecha": "2026-11-23",
+      "fuente": "Yahoo ^MOVE",
+      "manual": false,
+      "aporte": -0.12
+    },
+    {
+      "id": "hy",
+      "grupo": "estres",
+      "nombre": "Spreads de crédito high yield",
+      "detalle": "ICE BofA US High Yield OAS (FRED BAMLH0A0HYM2). Si no hay dato, queda fuera del promedio",
+      "signo": -1,
+      "modo": "nivel",
+      "activo": false,
+      "z": null,
+      "valor": null,
+      "fecha": null,
+      "fuente": null,
+      "manual": false,
+      "aporte": null
+    },
+    {
+      "id": "stlfsi",
+      "grupo": "estres",
+      "nombre": "Índice de estrés de la Fed de St. Louis",
+      "detalle": "STLFSI4",
+      "signo": -1,
+      "modo": "nivel",
+      "activo": false,
+      "z": null,
+      "valor": null,
+      "fecha": null,
+      "fuente": null,
+      "manual": false,
+      "aporte": null
+    }
+  ],
+  "fondeo": {
+    "sofr_iorb_pb": 2.0,
+    "reservas_t": 3.002,
+    "aporte_sofr_iorb": -0.05,
+    "aporte_reservas": -0.0,
+    "x_fondeo": -0.05,
+    "umbral_reservas_t": 3.0
+  },
+  "escenarios": [
+    {
+      "id": "hoy",
+      "nombre": "Hoy",
+      "descripcion": "z-scores calculados en la ventana móvil de 3 años",
+      "z": {
+        "m2": 0.49,
+        "liq_neta": 0.32,
+        "dolar": 1.93,
+        "amplitud": null,
+        "vix": 2.41,
+        "move": 0.59,
+        "hy": null,
+        "stlfsi": null
+      },
+      "sofr_iorb_pb": 2.0,
+      "reservas_t": 3.002,
+      "nota": "valores en vivo",
+      "score": 19.1,
+      "score_sin_fondeo": 20.5
+    },
+    {
+      "id": "agresivo_y_desordenado",
+      "nombre": "Agresivo y desordenado",
+      "descripcion": "Suba de 50 pb, crédito se rompe (ilustrativo)",
+      "z": {
+        "m2": -0.4,
+        "liq_neta": 0.0,
+        "dolar": 0.8,
+        "amplitud": null,
+        "vix": 1.5,
+        "move": 0.8,
+        "hy": 1.5,
+        "stlfsi": 0.3
+      },
+      "sofr_iorb_pb": 50.0,
+      "reservas_t": 2.95,
+      "nota": null,
+      "score": 2.0,
+      "score_sin_fondeo": 22.4
+    },
+    {
+      "id": "una_y_listo",
+      "nombre": "Una y listo",
+      "descripcion": "Suba de 25 pb y pausa, VIX a 25 (z = 1,5)",
+      "z": {
+        "m2": -1.23,
+        "liq_neta": 0.29,
+        "dolar": 2.05,
+        "amplitud": null,
+        "vix": 1.5,
+        "move": 0.95,
+        "hy": null,
+        "stlfsi": -1.13
+      },
+      "sofr_iorb_pb": 2.0,
+      "reservas_t": 2.98,
+      "nota": null,
+      "score": 21.5,
+      "score_sin_fondeo": 23.6
+    },
+    {
+      "id": "volatilidad_se_normaliza",
+      "nombre": "Volatilidad se normaliza",
+      "descripcion": "VIX 20 (z = 0,5), crédito se calma",
+      "z": {
+        "m2": -1.23,
+        "liq_neta": 0.29,
+        "dolar": 1.21,
+        "amplitud": null,
+        "vix": 0.5,
+        "move": 0.0,
+        "hy": null,
+        "stlfsi": -1.13
+      },
+      "sofr_iorb_pb": 0.0,
+      "reservas_t": 3.1,
+      "nota": null,
+      "score": 40.0,
+      "score_sin_fondeo": 40.0
+    },
+    {
+      "id": "giro_de_política",
+      "nombre": "Giro de política",
+      "descripcion": "Cesan las subas, mercados calmos (ilustrativo)",
+      "z": {
+        "m2": 0.3,
+        "liq_neta": 0.7,
+        "dolar": 0.8,
+        "amplitud": null,
+        "vix": -0.2,
+        "move": -0.2,
+        "hy": null,
+        "stlfsi": -0.8
+      },
+      "sofr_iorb_pb": 0.0,
+      "reservas_t": 3.2,
+      "nota": null,
+      "score": 59.2,
+      "score_sin_fondeo": 59.2
+    }
+  ],
+  "hitos": [
+    {
+      "fecha": "2017-04-05",
+      "score": 75.0,
+      "etiqueta": "2017: Pipo Score 60-75"
+    },
+    {
+      "fecha": "2020-03-11",
+      "score": 0.0,
+      "etiqueta": "Mar 2020: Pipo Score ~5"
+    },
+    {
+      "fecha": "2022-07-06",
+      "score": 4.8,
+      "etiqueta": "Pisos 2022: Pipo Score < 20"
+    },
+    {
+      "fecha": "2026-11-23",
+      "score": 19.1,
+      "etiqueta": "Hoy"
+    }
+  ],
+  "fuentes": [
+    "Fed H.6 M2 NSA semanal",
+    "WALCL − WTREGEN − RRPONTSYD (billions USD)",
+    "Fed H.10 BRD",
+    "Yahoo ^VIX",
+    "Yahoo ^MOVE",
+    "H.4.1 RBFRB",
+    "NY Fed SOFR",
+    "Fed PRates IORB+IOER",
+    "Yahoo ^NDX"
+  ],
+  "formula": "100 * Φ(X_base + X_fondeo), Φ = CDF normal estándar; X_base = promedio de z (3a) con signo; X_fondeo = −0,025·max(0, SOFR−IORB en pb) − max(0, 3−reservas_T)",
+  "historia_n": 674
+}

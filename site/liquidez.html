@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Indicador de Liquidez · Tablero de Mercado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="liquidez.css">
+</head>
+<body class="liq-page">
+<div id="lluvia" aria-hidden="true"></div>
+<div class="cinta"><div id="cinta"></div></div>
+<main class="app liq-app">
+<header class="top">
+  <h1>Indicador de Liquidez</h1>
+  <nav class="nav">
+    <a href="./">Dashboard</a>
+    <a href="heatmap.html">Heatmap</a>
+    <a class="on" href="liquidez.html">Liquidez</a>
+  </nav>
+  <button id="tema" aria-label="Cambiar tema">◐</button>
+</header>
+<p class="sub" id="act">Cargando…</p>
+<nav class="liq-jump" aria-label="Vistas">
+  <a href="#vista-medidor">Medidor</a>
+  <a href="#vista-serie">Serie histórica</a>
+  <a href="#vista-sim">Simulador</a>
+</nav>
+
+<!-- VISTA 1 -->
+<section class="pipo" id="vista-medidor">
+  <div class="kpis4" id="v1-kpis"></div>
+  <div class="v1-body">
+    <div class="tank-col">
+      <div class="tank-scale" aria-hidden="true"><span>100</span><span>80</span><span>60</span><span>40</span><span>20</span><span>0</span></div>
+      <div class="tank-wrap">
+        <svg class="tank" viewBox="0 0 90 220" role="img" aria-label="Tanque de liquidez 0 a 100">
+          <defs>
+            <clipPath id="tankClip"><rect x="8" y="8" width="52" height="204" rx="6"/></clipPath>
+            <linearGradient id="waveGrad" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#fff" stop-opacity=".28"/>
+              <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <rect class="tank-frame" x="8" y="8" width="52" height="204" rx="6"/>
+          <g clip-path="url(#tankClip)" id="tankBands"></g>
+          <g clip-path="url(#tankClip)" id="tankWave"></g>
+          <g id="tankMarker"></g>
+        </svg>
+        <div class="tank-labels" id="tankLabels"></div>
+      </div>
+    </div>
+    <div class="v1-right">
+      <div class="score-big" id="v1-score">–</div>
+      <div class="reg-title" id="v1-title"></div>
+      <p class="reg-sub" id="v1-sub"></p>
+      <p class="fondeo-line" id="v1-fondeo"></p>
+      <ul class="legend" id="v1-legend"></ul>
+    </div>
+  </div>
+</section>
+
+<!-- VISTA 2 -->
+<section class="pipo" id="vista-serie">
+  <header class="v2-head">
+    <div>
+      <h2>Pipo Score vs Nasdaq-100 · semanal desde 2014</h2>
+      <p class="v2-lead">Escala logarítmica en el índice. Fondo naranja: Pipo Score bajo 40 (más intenso bajo 20). Fondo verde: Pipo Score sobre 60.</p>
+    </div>
+    <span class="badge-src" id="v2-src">SERIE REAL · FED + YAHOO</span>
+  </header>
+  <label class="chk"><input type="checkbox" id="conFondeo" checked> Recalculada con fondeo</label>
+  <div class="kpis4" id="v2-kpis"></div>
+  <div class="charts" id="charts">
+    <svg id="chartNdx" viewBox="0 0 1000 280" preserveAspectRatio="xMidYMid meet"></svg>
+    <svg id="chartScore" viewBox="0 0 1000 260" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="tip tip-chart" id="chartTip" hidden></div>
+  </div>
+</section>
+
+<!-- VISTA 3 -->
+<section class="pipo v3" id="vista-sim">
+  <div class="v3-grid">
+    <div class="v3-left">
+      <h2>Entradas · z-score vs. últimos 3 años</h2>
+      <div id="sliders"></div>
+    </div>
+    <div class="v3-right">
+      <div class="esc-box">
+        <h2>Escenarios de diciembre</h2>
+        <div id="escenarios"></div>
+        <p class="esc-foot">Fed 9 dic · BoE y BoJ 17-18 dic</p>
+      </div>
+      <div class="move-box">
+        <h2>Qué mueve el nivel ahora</h2>
+        <div id="aportes"></div>
+        <p class="help" id="aportes-foot"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<p class="sub">Indicador inspirado en el Pipo Score de @Pipo_Bpo. Datos de la Fed, NY Fed y Yahoo Finance. Solo informativo, no es recomendación.</p>
+</main>
+<script src="comun.js"></script>
+<script src="liquidez.js"></script>
+</body>
+</html>

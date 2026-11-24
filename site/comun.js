@@ -2,7 +2,7 @@ const $=s=>document.querySelector(s),f=(n,d=2)=>n==null?'–':Number(n).toLocale
 const pm=x=>x==null?'–':(x>0?'+':'')+f(x)+'%',sg=x=>x>=0?'up':'dn';
 const R_=document.documentElement;if(localStorage.tema==='claro'||(!localStorage.tema&&matchMedia('(prefers-color-scheme: light)').matches))R_.classList.add('claro');
 function cargar(cb){$('#tema').onclick=()=>{R_.classList.toggle('claro');localStorage.tema=R_.classList.contains('claro')?'claro':'oscuro'};
-fetch('data/mercado.json?'+Date.now()).then(r=>r.json()).then(d=>{document.body.className=d.animo;
+fetch('data/mercado.json?'+Date.now()).then(r=>r.json()).then(d=>{document.body.classList.remove('bueno','malo');if(d.animo)document.body.classList.add(d.animo);
 $('#act').textContent='Actualizado: '+new Date(d.actualizado).toLocaleString('es-AR',{timeZone:'America/Argentina/Buenos_Aires',hour12:false})+' (hora Argentina) · '+d.universo.total+' activos';
 const c=d.cinta.map(x=>`<span><b>${x.t}</b> <i class="${sg(x.chg)}">${pm(x.chg)}</i></span>`).join('');$('#cinta').innerHTML=c+c;cb(d)}).catch(e=>{console.error(e);$('#act').textContent='No se pudieron cargar los datos.'})}
 function squarify(items,x,y,w,h){const tot=items.reduce((s,a)=>s+a.v,0),out=[];let rest=items.slice();
